@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
     
     int fd = 1;
 
-    //message d'accueil
+    //Welcome message
     const char *message = "Bienvenue dans le Shell ENSEA. \n";
     write(fd, message, strlen(message));
     message = "Pour quitter, taper 'exit'. \n";
