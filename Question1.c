@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 int main(int argc, char *argv[]) {
-    // const char *message;
+    
     int fd = 1;
 
     //message d'accueil
