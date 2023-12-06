@@ -26,12 +26,18 @@ int main(int argc, char *argv[]) {
 
         command[input-1]='\0';     //exclude the NULL character at the end of the table to read the command
         if (input!=0) {
-            int pid=fork();        //creation of a new processus to do secondary tasks
-            if (pid!=0) {
-                sleep(1);
-            } else {
-                execlp(command,command,(char *)NULL);
-                exit(EXIT_FAILURE);     //Avoids opening several child processes in parallel
+            if (strcmp(command,"exit")==0) {
+                message = "Bye Bye ... \n";
+                write(fd,message,strlen(message));
+                exit(EXIT_SUCCESS);}
+            else {
+                int pid = fork();        //creation of a new processus to do secondary tasks
+                if (pid != 0) {
+                    sleep(1);
+                } else {
+                    execlp(command, command, (char *) NULL);
+                    exit(EXIT_FAILURE);     //Avoids opening several child processes in parallel
+                }
             }
         }
         write(fd,message,strlen(message));
