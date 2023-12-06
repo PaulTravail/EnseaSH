@@ -2,44 +2,63 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 #define BUFFSIZE 128
+#define fd 1
+#define WELCOME "Bienvenue dans le Shell ENSEA. \nPour quitter, taper 'exit'.\nenseash % "
+#define GOODBYE "Bye Bye ... \n"
+
+
+void prompt(char *message){
+    write(fd, message, strlen(message));
+}
+
+void return_code(void){
+    int status;
+    wait(&status);
+    char code_exit[BUFFSIZE];
+    if (WIFEXITED(status)) {
+        sprintf(code_exit, "enseash [exit:%d] %% ", WEXITSTATUS(status));
+        write(fd,code_exit,strlen(code_exit));
+
+    } else if (WIFSIGNALED(status)) {
+        sprintf(code_exit, "enseash [sign:%d] %% ", WTERMSIG(status));
+        write(fd,code_exit,strlen(code_exit));
+    }
+}
 
 int main(int argc, char *argv[]) {
 
     char command[BUFFSIZE];
-    int fd = 1;
 
     //Welcome message
-    const char *message = "Bienvenue dans le Shell ENSEA. \n";
 
+    prompt(WELCOME);
 
-    write(fd, message, strlen(message));
-    message = "Pour quitter, taper 'exit'. \n";
-    write(fd, message, strlen(message));
-    message = "enseash % ";
-    write(fd,message,strlen(message));
 
     while(1) {
 
         int input = read(fd,command,BUFFSIZE);
 
         command[input-1]='\0';     //exclude the NULL character at the end of the table to read the command
+
         if (input!=0) {
             if (strcmp(command,"exit")==0) {
-                message = "Bye Bye ... \n";
-                write(fd,message,strlen(message));
+
+                prompt(GOODBYE);
                 exit(EXIT_SUCCESS);}
             else {
                 int pid = fork();        //creation of a new processus to do secondary tasks
+
                 if (pid != 0) {
                     sleep(1);
                 } else {
                     execlp(command, command, (char *) NULL);
                     exit(EXIT_FAILURE);     //Avoids opening several child processes in parallel
                 }
+                return_code();
             }
         }
-        write(fd,message,strlen(message));
     }
 }
