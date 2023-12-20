@@ -4,26 +4,32 @@
 #include <string.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 
 #define BUFSIZE 128
 #define fd 1
 #define ERROR_INPUT "Erreur dans la commande !\nUsage: <program> <host> <file>\n"
 #define ERROR_ADRESS "Erreur lors de la résolution de l'adresse.\n"
+#define ERROR_SOCKET "Erreur lors de la création du socket.\n"
+#define ERROR_CONNECT "Erreur lors de l'établissement de la connexion.\n"
+#define CONNECT_SUCCESS "Connecté au réseau.\n"
+
+struct addrinfo hints, *result, *rp;
+int status;
+void *addr;
+char adress[BUFSIZE];
+char adress_str[BUFSIZE];
 
 void prompt(char *message){
     write(fd, message, strlen(message));
 }
 
 void return_adress(char *host){
-    struct addrinfo hints, *result, *rp;
-    int status;
-    void *addr;
-    char adress[BUFSIZE];
-    char adress_str[BUFSIZE];
 
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;    // Allow IPv4 or IPv6
-
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = IPPROTO_UDP;
     // Host information
     status = getaddrinfo(host, "tftp", &hints, &result);
     if (status != 0) {
@@ -43,8 +49,25 @@ void return_adress(char *host){
         sprintf(adress,"Address: %s\n", adress_str);
         prompt(adress);
     }
+}
+void create_socket(){
 
-freeaddrinfo(result);
+    int client_socket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (client_socket == -1) {
+        prompt(ERROR_SOCKET);
+        exit(EXIT_FAILURE);
+    }
+    // Connection
+    status = connect(client_socket, result->ai_addr, result->ai_addrlen);
+    if (status == -1) {
+        prompt(ERROR_CONNECT);
+        close(client_socket);
+        exit(EXIT_FAILURE);
+    } else {
+        //Send message
+        prompt(CONNECT_SUCCESS);
+        send(client_socket,CONNECT_SUCCESS,strlen(CONNECT_SUCCESS),0);
+    }
 }
 
 int main(int argc, char* argv[]){
@@ -54,11 +77,13 @@ int main(int argc, char* argv[]){
 
     // Command verification
     if(argc != 3){
-        prompt(ERROR_INPUT);
+        write(fd, ERROR_INPUT, strlen(ERROR_INPUT));
         exit(EXIT_FAILURE);
     }
 
     return_adress(host);
+    create_socket();
+    freeaddrinfo(result);
 
     return 0;
 }
